@@ -55,7 +55,7 @@ class Job(Thread):
                     print 'bad conf file(opts), please check the usage'
             for val,keys in confs.iteritems():
                 self.validate_conf(confs,std_keys)
-        return confs
+            return confs
 
     def validate_conf(self,confs,std_keys):
         if len(std_keys) != len(confs):
