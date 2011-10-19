@@ -10,6 +10,10 @@ def parser():
     if parse.parse_args()[0].conf is None:
         parse.error("master conf file missing. Please check the usage")
     return parse_args()
+def build_detect():
+    while True:
+        build = check_for_new_build(get_latest_build())
+
 if __name__ == '__main__':    
     build = check_for_new_build(get_latest_build())
     implemtation(build)
