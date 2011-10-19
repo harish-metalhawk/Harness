@@ -5,6 +5,7 @@ from readnwrite import unblocked_read
 from threading import Thread
 from Queue import Queue
 import logging,exceptions
+#from test import Build_KILL
 '''FIX ME
 1)Remove all the global variables and make it static.
 2)Any bugs while interaction with the menu is highly probable because of the merry go round of the functions of that  part.. watch it.
@@ -445,6 +446,7 @@ def signal_handle():
     global cid,dead_jobs,BUILD_KILL
     try:
         while True :#threading.active_count()>1:
+            print BUILD_KILL
             if BUILD_KILL:
                 kill_all()
                 raise BuildRestart 
@@ -529,7 +531,7 @@ def dynamic_restart(valu):
     q.put(DYN_RESTART[valu])
     fireJobs(q)
 
-def implementation(conf,build = '',restart = 0):
+def implementation(conf,build = '',restart = 3):
     global DONE_HASH,JOB_HASH,KILL_DICT,job_id,cid
     q = Queue()
     q,KILL_DICT,job_id = getconf(conf,build,restart)
@@ -538,5 +540,18 @@ def implementation(conf,build = '',restart = 0):
     time.sleep(.5)  #To handle the race between main threads and child threads
     signal_handle()
 
+def file_check():
+    global BUILD_KILL
+    while True:
+        if os.path.isfile('abc.txt'):
+            BUILD_KILL = True
+            #break
+
 if __name__ == '__main__':
-    implementation(sys.argv[1])
+    th = threading.Thread(target=file_check)
+    th.daemon = True
+    th.start()
+    try:
+        implementation(sys.argv[1],'',3)
+    except BuildRestart:
+        print 'handled this:):)'
