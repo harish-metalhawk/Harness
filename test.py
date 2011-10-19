@@ -1,5 +1,5 @@
 #!/home/buildmaster/sw/python/2.6.5/linux/x86_64/bin/python2.6
-from changed_harness2 import implemtation
+from changed_harness2 import implementation,BuildRestart
 from adv_auto_start import check_for_new_build,get_latest_build
 
 def parser():
@@ -10,10 +10,17 @@ def parser():
     if parse.parse_args()[0].conf is None:
         parse.error("master conf file missing. Please check the usage")
     return parse_args()
+
 def build_detect():
     while True:
         build = check_for_new_build(get_latest_build())
+        changed_harness2.BUILD_KILL = True
 
-if __name__ == '__main__':    
-    build = check_for_new_build(get_latest_build())
-    implemtation(build)
+if __name__ == '__main__': 
+    opts,parse = parser()
+    while True:
+        try:
+            implementation(opts.conf,build,opts.restart)
+        except BuildRestart:
+            print 'New Build arrived,restarting.....'
+            pass

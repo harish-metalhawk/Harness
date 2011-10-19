@@ -4,7 +4,7 @@ from ssh import SSH
 from readnwrite import unblocked_read
 from threading import Thread
 from Queue import Queue
-import logging
+import logging,exceptions
 '''FIX ME
 1)Remove all the global variables and make it static.
 2)Any bugs while interaction with the menu is highly probable because of the merry go round of the functions of that  part.. watch it.
@@ -24,6 +24,15 @@ DYN_RESTART = {} #dict of the conf file name and its coressponding arguments to 
 dead_jobs = set()  #set of all dead jobs
 ALL_JOBS = {}   #dict of all the conf files and corresponding job id's
 DEPENDENCY_DICT = {} #dict of conf files , with keys as their master's job-id
+BUILD_KILL=False # this should be used by externel code for the auto stop of the all apps running,don't mess with this
+
+
+class BuildRestart(exceptions.Exception):
+    def __init__(self):
+        return
+    
+    def __string__(self):
+        print 'somebody called the BUILD_KILL'
 
 class Job(Thread):
 
@@ -71,7 +80,7 @@ class Job(Thread):
         self.CONF_GOOD=True
         self.tdata=''
         #self.build = buid
-        path,self.JOB_ID,self.MASTER_ID,self.build = items
+        path,self.JOB_ID,self.MASTER_ID,self.build,self.restart_attempts = items
         DONE_HASH[self.JOB_ID] = False
         self.path = path
         self.conf=self.readconf(path)
@@ -102,7 +111,7 @@ class Job(Thread):
         self.allIsWell = True
         self.is_slave = False
         self.is_restart = True
-        self.restart_attempts = 3
+        #self.restart_attempts = 3
 
     
 
@@ -359,11 +368,12 @@ def clean_up(val):
     global cid,kill,DONE_HASH,KILL_DICT
     #val = kill_menu()
     if val == 'all':
-        kill = True
-        time.sleep(2)     #for a rare race condition where after a restart  the job thread has not yet updated the kill or KILL_DICT values but the main thread exists bcoz of the past values, probably seen if only one conf file is used
-        while False in DONE_HASH:
-            time.sleep(1)
-        kill_all_procs(cid)
+        #kill = True
+        #time.sleep(2)     #for a rare race condition where after a restart  the job thread has not yet updated the kill or KILL_DICT values but the main thread exists bcoz of the past values, probably seen if only one conf file is used
+        #while False in DONE_HASH:
+            #time.sleep(1)
+        #kill_all_procs(cid)
+        kill_all()
         sys.exit()
     elif val == 'resume':
         signal_handle()
@@ -383,6 +393,14 @@ def clean_up(val):
         print 'invalid selection'
         kill_menu()
     signal_handle()
+
+def kill_all():
+    global cid,kill,DONE_HASH,KILL_DICT
+    kill = True
+    time.sleep(2)     #for a rare race condition where after a restart  the job thread has not yet updated the kill or KILL_DICT values but the main thread exists bcoz of the past values, probably seen if only one conf file is used
+    while False in DONE_HASH:
+        time.sleep(1)
+    kill_all_procs(cid)
 
 def handle_reconf():
     global ALL_JOBS,KILL_DICT,DONE_HASH,dead_jobs
@@ -424,9 +442,12 @@ def check_num_jobs(li):
     return jobs,len(jobs)
 
 def signal_handle():
-    global cid,dead_jobs
+    global cid,dead_jobs,BUILD_KILL
     try:
         while True :#threading.active_count()>1:
+            if BUILD_KILL:
+                kill_all()
+                raise BuildRestart 
             thread_no =  threading.enumerate()[1:]
             #print thread_no
             print 'number of current jobs: ',len(cid),'\tnumber of queued jobs: ',len(pending_jobs),'\tnumber of dead jobs: ',len(dead_jobs)
@@ -434,9 +455,12 @@ def signal_handle():
                 #raise KeyboardInterrupt
             time.sleep(4)
     except KeyboardInterrupt:
-        kill_menu()
+        try:
+            kill_menu()
+        except KeyboardInterrupt:
+            pass
 
-def getconf(path,build):
+def getconf(path,build,restart):
     global DYN_RESTART
     KILL_DICT = {}
     q = Queue()
@@ -446,7 +470,7 @@ def getconf(path,build):
         for i in li:
             s,le = check_num_jobs(i.rstrip('\n'))
             for r in s:
-                pu = r,job_id,-1 if s.index(r) == 0 else (job_id-1),build
+                pu = r,job_id,-1 if s.index(r) == 0 else (job_id-1),build,restart
                 ALL_JOBS[r] = job_id
                 DYN_RESTART[r] = pu
                 KILL_DICT[r] = False
@@ -505,19 +529,14 @@ def dynamic_restart(valu):
     q.put(DYN_RESTART[valu])
     fireJobs(q)
 
-def implemtation(build = ''):
+def implementation(conf,build = '',restart = 0):
     global DONE_HASH,JOB_HASH,KILL_DICT,job_id,cid
     q = Queue()
-    try :
-        conf = sys.argv[1]
-    except :
-        print 'No conf file given'
-        sys.exit(1)
-    q,KILL_DICT,job_id = getconf(conf,build)
+    q,KILL_DICT,job_id = getconf(conf,build,restart)
     [ (JOB_HASH.append(False),DONE_HASH.append(False)) for k in range(0,job_id) ]
     fireJobs(q)
     time.sleep(.5)  #To handle the race between main threads and child threads
     signal_handle()
 
 if __name__ == '__main__':
-    implemtation()
+    implementation(sys.argv[1])
