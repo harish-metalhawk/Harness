@@ -7,6 +7,9 @@ def parser():
     parse.add_option('-r',dest='restart',type='int',default=0)
     parse.add_option('-b',dest='build',type='string',default='main-dev')
     parse_add_option('-m',dest='conf',type='string')
-
-build = check_for_new_build(get_latest_build())
-implemtation(build)
+    if parse.parse_args()[0].conf is None:
+        parse.error("master conf file missing. Please check the usage")
+    return parse_args()
+if __name__ == '__main__':    
+    build = check_for_new_build(get_latest_build())
+    implemtation(build)
