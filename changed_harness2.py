@@ -1,5 +1,6 @@
 #!/usr/bin/python2.6
 import os,sys,time,thread,select,re,threading,socket
+from opts import opts
 from ssh import SSH
 from readnwrite import unblocked_read
 from threading import Thread
@@ -82,7 +83,7 @@ class Job(Thread):
         self.CONF_GOOD=True
         self.tdata=''
         #self.build = buid
-        path,self.JOB_ID,self.MASTER_ID,self.build,self.restart_attempts = items
+        path,self.JOB_ID,self.MASTER_ID,self.build = items
         DONE_HASH[self.JOB_ID] = False
         self.path = path
         self.conf=self.readconf(path)
@@ -113,7 +114,7 @@ class Job(Thread):
         self.allIsWell = True
         self.is_slave = False
         self.is_restart = True
-        #self.restart_attempts = 3
+        self.restart_attempts = 3
 
     
 
@@ -464,7 +465,7 @@ def signal_handle():
         except KeyboardInterrupt:
             pass
 
-def getconf(path,build,restart):
+def getconf(path,build):
     global DYN_RESTART
     KILL_DICT = {}
     q = Queue()
@@ -474,7 +475,7 @@ def getconf(path,build,restart):
         for i in li:
             s,le = check_num_jobs(i.rstrip('\n'))
             for r in s:
-                pu = r,job_id,-1 if s.index(r) == 0 else (job_id-1),build,restart
+                pu = r,job_id,-1 if s.index(r) == 0 else (job_id-1),build
                 ALL_JOBS[r] = job_id
                 DYN_RESTART[r] = pu
                 KILL_DICT[r] = False
@@ -533,10 +534,10 @@ def dynamic_restart(valu):
     q.put(DYN_RESTART[valu])
     fireJobs(q)
 
-def implementation(conf,build = '',restart = 3):
+def implementation(conf,build = ''):
     global DONE_HASH,JOB_HASH,KILL_DICT,job_id,cid
     q = Queue()
-    q,KILL_DICT,job_id = getconf(conf,build,restart)
+    q,KILL_DICT,job_id = getconf(conf,build)
     [ (JOB_HASH.append(False),DONE_HASH.append(False)) for k in range(0,job_id) ]
     fireJobs(q)
     time.sleep(.5)  #To handle the race between main threads and child threads
@@ -571,16 +572,22 @@ def reset_vals():
     WAIT_TILL_CLEAR = False #this is used during the build detection to flag off when all the jobs are killed and ready to restart.
 
 if __name__ == '__main__':
-    th = threading.Thread(target=file_check)
-    th.daemon = True
-    th.start()
+    opts,args = opts()
+    master_conf = opts.conf
+    smokes_mode = opts.build
+    simple_harness = opts.plain
+    path_to_build = opts.path
+    if not simple_harness:
+        th = threading.Thread(target=file_check)
+        th.daemon = True
+        th.start()
     while True:
         try:
-            #print '---------------------restarting'
-            #print '-----------------------------calling the implementation method'
-            implementation(sys.argv[1],'',3)
+            implementation(master_conf,'')
         except BuildRestart:
-            print '---------------------restarting'
-            print '-----------------------------calling the implementation method'
-            reset_vals()
-            print 'handled this:):)'
+            if smokes_mode:
+                reset_vals()
+                print '----------------restarting----------------'
+            else :
+                print '----------------exiting---------------'
+                break
