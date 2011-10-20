@@ -26,6 +26,7 @@ dead_jobs = set()  #set of all dead jobs
 ALL_JOBS = {}   #dict of all the conf files and corresponding job id's
 DEPENDENCY_DICT = {} #dict of conf files , with keys as their master's job-id
 BUILD_KILL=False # this should be used by externel code for the auto stop of the all apps running,don't mess with this
+WAIT_TILL_CLEAR = False #this is used during the build detection to flag off when all the jobs are killed and ready to restart.
 
 
 class BuildRestart(exceptions.Exception):
@@ -443,12 +444,13 @@ def check_num_jobs(li):
     return jobs,len(jobs)
 
 def signal_handle():
-    global cid,dead_jobs,BUILD_KILL
+    global cid,dead_jobs,BUILD_KILL,WAIT_TILL_CLEAR
     try:
         while True :#threading.active_count()>1:
             print BUILD_KILL
             if BUILD_KILL:
                 kill_all()
+                WAIT_TILL_CLEAR = True
                 raise BuildRestart 
             thread_no =  threading.enumerate()[1:]
             #print thread_no
@@ -541,17 +543,44 @@ def implementation(conf,build = '',restart = 3):
     signal_handle()
 
 def file_check():
-    global BUILD_KILL
+    global BUILD_KILL,WAIT_TILL_CLEAR
     while True:
         if os.path.isfile('abc.txt'):
             BUILD_KILL = True
+            #while  WAIT_TILL_CLEAR:
+                #print 'waiting to clear all the apps'
+                #time.sleep(2)
+            time.sleep(10)
             #break
+
+def reset_vals():
+    global done,kill,JOB_HASH,KILL_DICT,DONE_HASH,cid,pending_jobs,DYN_RESTART,dead_jobs,ALL_JOBS,DEPENDENCY_DICT,BUILD_KILL,WAIT_TILL_CLEAR
+    done = False
+    kill = False
+    JOB_HASH = []
+    KILL_DICT = {}
+    DONE_HASH = []
+    cid =[]  #list of all currently running jobs
+    pending_jobs = []  #list of all queued jobs
+    #pending_jobs= 0
+    DYN_RESTART = {} #dict of the conf file name and its coressponding arguments to the Job object
+    dead_jobs = set()  #set of all dead jobs
+    ALL_JOBS = {}   #dict of all the conf files and corresponding job id's
+    DEPENDENCY_DICT = {} #dict of conf files , with keys as their master's job-id
+    BUILD_KILL=False # this should be used by externel code for the auto stop of the all apps running,don't mess with this
+    WAIT_TILL_CLEAR = False #this is used during the build detection to flag off when all the jobs are killed and ready to restart.
 
 if __name__ == '__main__':
     th = threading.Thread(target=file_check)
     th.daemon = True
     th.start()
-    try:
-        implementation(sys.argv[1],'',3)
-    except BuildRestart:
-        print 'handled this:):)'
+    while True:
+        try:
+            #print '---------------------restarting'
+            #print '-----------------------------calling the implementation method'
+            implementation(sys.argv[1],'',3)
+        except BuildRestart:
+            print '---------------------restarting'
+            print '-----------------------------calling the implementation method'
+            reset_vals()
+            print 'handled this:):)'
