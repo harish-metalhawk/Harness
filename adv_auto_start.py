@@ -55,7 +55,7 @@ def check_for_build_complete(new):
             print(str(datetime.now())+" : Build ready for rock and roll!!!")
             return
         sleep(1800)
-        print(str(datetime.now())+" : build not ready yet")
+        #print(str(datetime.now())+" : build not ready yet")
 
 def get_latest_build():
     proc = subprocess.Popen(["ls","-lrt","/home/buildmaster/nightly/AVM/main-dev-x86/in_progress/latest",],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -71,19 +71,19 @@ def check_for_new_build(old):
         new=get_latest_build()
         if not ( re.match(new,old)):
             old = new 
-            print(str(datetime.now())+" : finally!!! a new build:)")
+            #print(str(datetime.now())+" : finally!!! a new build:)")
             check_for_build_complete(new)
             #fire_up_a_job()
             break
         sleep(1800)
-        print(str(datetime.now()) + " : No new build yet:(")
+        #print(str(datetime.now()) + " : No new build yet:(")
     return new
 def get_current_build():
     return get_latest_build()
 '''incase for an immediate test uncomment the next line and comment the remaining lines
 updated usage
 1) use just get_latest_build() to get the current build and check_for_new_build() for finding the next build by passing the get_latest_build() as the argyment'''
-check_for_new_build(get_latest_build())#'/home/buildmaster/nightly/AVM/main-dev-x86/in_progress/avm-x86-1338/')
+#check_for_new_build(get_latest_build())#'/home/buildmaster/nightly/AVM/main-dev-x86/in_progress/avm-x86-1338/')
 #while True:
      #check_for_new_build(get_current_build())
 

@@ -6,6 +6,7 @@ from readnwrite import unblocked_read
 from threading import Thread
 from Queue import Queue
 import logging,exceptions
+from adv_auto_start import check_for_new_build,get_latest_build,get_current_build
 #from test import Build_KILL
 '''FIX ME
 1)Remove all the global variables and make it static.
@@ -448,7 +449,7 @@ def signal_handle():
     global cid,dead_jobs,BUILD_KILL,WAIT_TILL_CLEAR
     try:
         while True :#threading.active_count()>1:
-            print BUILD_KILL
+            #print BUILD_KILL
             if BUILD_KILL:
                 kill_all()
                 WAIT_TILL_CLEAR = True
@@ -571,6 +572,13 @@ def reset_vals():
     BUILD_KILL=False # this should be used by externel code for the auto stop of the all apps running,don't mess with this
     WAIT_TILL_CLEAR = False #this is used during the build detection to flag off when all the jobs are killed and ready to restart.
 
+def build_check():
+    global BUILD_KILL,WAIT_TILL_CLEAR
+    while True:
+        build = check_for_new_build(get_current_build())
+        BUILD_KILL = True
+        
+
 if __name__ == '__main__':
     opts,args = opts()
     master_conf = opts.conf
@@ -578,12 +586,17 @@ if __name__ == '__main__':
     simple_harness = opts.plain
     path_to_build = opts.path
     if not simple_harness:
+        build = check_for_new_build(get_current_build())
         th = threading.Thread(target=file_check)
         th.daemon = True
         th.start()
     while True:
         try:
-            implementation(master_conf,'')
+            if not simple_harness:
+                build = get_current_build()
+            else:
+                build = ''
+            implementation(master_conf,build)
         except BuildRestart:
             if smokes_mode:
                 reset_vals()
