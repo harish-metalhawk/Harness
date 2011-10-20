@@ -89,7 +89,7 @@ class Job(Thread):
         self.conf=self.readconf(path)
         KILL_DICT[self.path] = False
         kill = False
-        print self.path,DONE_HASH[self.JOB_ID],KILL_DICT[self.path] 
+        #print self.path,DONE_HASH[self.JOB_ID],KILL_DICT[self.path] 
         if self.CONF_GOOD:
             self.initialize(path)
             Thread.__init__(self)
@@ -123,7 +123,7 @@ class Job(Thread):
         self.is_slave = True
         while not JOB_HASH[self.MASTER_ID] and not (kill or KILL_DICT[self.path]) and not DONE_HASH[self.MASTER_ID]:
             time.sleep(3)
-        print JOB_HASH[self.MASTER_ID],(kill or KILL_DICT[self.path]),DONE_HASH[self.MASTER_ID],'\t somebody woke me up',self.path
+        #print JOB_HASH[self.MASTER_ID],(kill or KILL_DICT[self.path]),DONE_HASH[self.MASTER_ID],'\t somebody woke me up',self.path
 
     def run(self):
         global cid
@@ -143,7 +143,7 @@ class Job(Thread):
             #print self.MASTER_ID
             sshOb = SSH(self.host,self.user,self.conf['pass'])
             self.pid,fd,success = sshOb.fork()
-            print '---------------',success
+            #print '---------------',success
             #print fd
             if success:
                 self.parent_processing(fd)
@@ -219,7 +219,7 @@ class Job(Thread):
                     self.write(fd,'\x03')
                     time.sleep(4)
                     kill_attempts += 1
-                    print 'no of attempts :',kill_attempts
+                    #print 'no of attempts :',kill_attempts
                 rd,wt,ex = select.select([fd],[],[],.1)
                 if fd in rd:
                     rep = os.read(fd,1024)
