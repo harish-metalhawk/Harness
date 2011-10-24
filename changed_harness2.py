@@ -30,6 +30,7 @@ ALL_JOBS = {}   #dict of all the conf files and corresponding job id's
 DEPENDENCY_DICT = {} #dict of conf files , with keys as their master's job-id
 BUILD_KILL=False # this should be used by externel code for the auto stop of the all apps running,don't mess with this
 WAIT_TILL_CLEAR = False #this is used during the build detection to flag off when all the jobs are killed and ready to restart.
+BUILD_RESTART = 0 #counts the number of times the new build has been detected and jobs are relaunched
 
 
 class BuildRestart(exceptions.Exception):
@@ -65,13 +66,17 @@ class Job(Thread):
             DONE_HASH[self.JOB_ID] = True
 
     def initialize(self,path):
+        global BUILD_RESTART
         user = self.conf['user'].rstrip('\n')
         self.user = user
         host = self.conf['host'].rstrip('\n')
         self.host = host
         self.EXPECT=user+'@'+host
         self.port = int(self.conf['port'].rstrip('\n'))
-        self.log = self.conf['logs'].rstrip('\n')
+        if BUILD_RESTART > 0:
+            self.log = self.conf['logs'].rstrip('\n') +'.bk.'+ str(BUILD_RESTART)
+        else :
+            self.log = self.conf['logs'].rstrip('\n') 
         self.duration = float(self.conf['dur'].rstrip('\n'))
         self.time_handling = False
         self.sleep_time = float(self.conf['delay'].rstrip('\n'))
@@ -440,13 +445,14 @@ def check_num_jobs(li):
     return jobs,len(jobs)
 
 def signal_handle():
-    global cid,dead_jobs,BUILD_KILL,WAIT_TILL_CLEAR
+    global cid,dead_jobs,BUILD_KILL,WAIT_TILL_CLEAR,BUILD_RESTART
     try:
         while True :#threading.active_count()>1:
             #print BUILD_KILL
             if BUILD_KILL:
                 kill_all()
                 WAIT_TILL_CLEAR = True
+                BUILD_RESTART += 1
                 raise BuildRestart 
             thread_no =  threading.enumerate()[1:]
             #print thread_no
