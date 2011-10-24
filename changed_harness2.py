@@ -584,7 +584,7 @@ if __name__ == '__main__':
     simple_harness = opts.plain
     path_to_build = opts.path
     if not simple_harness:
-        build = check_for_new_build(get_current_build())
+        build = check_for_new_build(get_current_build(path_to_build),path_to_build)
         th = threading.Thread(target=file_check)
         th.daemon = True
         th.start()
@@ -594,7 +594,6 @@ if __name__ == '__main__':
                 build = get_current_build()
             else:
                 build = ''
-            print 'why am i coming here???'
             implementation(master_conf,build)
         except BuildRestart:
             if smokes_mode:

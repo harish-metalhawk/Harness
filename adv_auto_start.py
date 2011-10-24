@@ -57,18 +57,18 @@ def check_for_build_complete(new):
         sleep(1800)
         #print(str(datetime.now())+" : build not ready yet")
 
-def get_latest_build():
-    proc = subprocess.Popen(["ls","-lrt","/home/buildmaster/nightly/AVM/main-dev-x86/in_progress/latest",],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+def get_latest_build(path="/home/buildmaster/nightly/AVM/main-dev-x86/in_progress/latest"):
+    proc = subprocess.Popen(["ls","-lrt",path,],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     k= str(proc.communicate()[0])
     #print(k)
     k = re.match(".*[-][>][\s](.*)",k)
     return k.group(1)
 
-def check_for_new_build(old):
+def check_for_new_build(old,path="/home/buildmaster/nightly/AVM/main-dev-x86/in_progress/latest"):
     new=''
     #old='/home/buildmaster/nightly/AVM/main-dev-x86/in_progress/avm-x86-1269/'
     while True :
-        new=get_latest_build()
+        new=get_latest_build(path)
         if not ( re.match(new,old)):
             old = new 
             #print(str(datetime.now())+" : finally!!! a new build:)")

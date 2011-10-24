@@ -45,6 +45,10 @@ def validate_conf(opts):
     for k,v in extra_opts.iteritems():
         if k not in opts:
             opts[k] = v
+    try:
+        [ int(opts[i]) for i in opts.iterkeys() if i in extra_opts ]
+    except : 
+        raise BadConf
     return opts
         
 
@@ -55,7 +59,7 @@ def clean_up(opts):
     return new_opts
 
 if __name__ == '__main__':
-    k = readconf('/home/harish/New_ssh/conf0.txt')
+    k = readConf('/home/harish/New_ssh/conf.txt')
     for i in k:
         print i
 
