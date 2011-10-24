@@ -7,6 +7,7 @@ from threading import Thread
 from Queue import Queue
 import logging,exceptions
 from adv_auto_start import check_for_new_build,get_latest_build,get_current_build
+from conf import readConf,BadConf
 #from test import Build_KILL
 '''FIX ME
 1)Remove all the global variables and make it static.
@@ -40,45 +41,6 @@ class BuildRestart(exceptions.Exception):
 
 class Job(Thread):
 
-    def readconf(self,path):
-        std_keys = ['user','host','path','command','logs','dur','delay','pass','port']
-        if not os.path.isfile(path):
-            print "could not find the conf file in the given path"
-        else:
-            confs = dict()
-            conf_file = open(path,'r')
-            conf = conf_file.readlines()
-            for i in conf:
-                try:
-                    opt,val = i.split('=',1)
-                    confs[opt] = val
-                except:
-                    pass
-            for l in confs.iterkeys():
-                if l not in std_keys:
-                    print 'bad conf file(opts), please check the usage'
-            for val,keys in confs.iteritems():
-                self.validate_conf(confs,std_keys)
-            return confs
-
-    def validate_conf(self,confs,std_keys):
-        if len(std_keys) != len(confs):
-                self.CONF_GOOD = False
-        for keys in confs.iterkeys():
-            if keys not in std_keys:
-                self.CONF_GOOD = False
-        for keys,vals in confs.iteritems():
-            if not re.match('^(user|host|path|command|logs|dur|delay|pass|port)$',keys):
-                self.CONF_GOOD = False
-            if re.match('^(dur|delay)$',keys):
-                try:
-                    float(vals)
-                except:
-                    self.CONF_GOOD = False
-                    pass
-
-                
-
     def __init__(self,items):
         global KILL_DICT,DONE_HASH
         self.CONF_GOOD=True
@@ -87,13 +49,20 @@ class Job(Thread):
         path,self.JOB_ID,self.MASTER_ID,self.build = items
         DONE_HASH[self.JOB_ID] = False
         self.path = path
-        self.conf=self.readconf(path)
+        #self.conf=self.readconf(path)
+        try:
+            self.conf=readConf(path)
+        except BadConf:
+            self.CONF_GOOD = False
+            print 'Bad configuration file',self.path
         KILL_DICT[self.path] = False
         kill = False
         #print self.path,DONE_HASH[self.JOB_ID],KILL_DICT[self.path] 
         if self.CONF_GOOD:
             self.initialize(path)
             Thread.__init__(self)
+        else :
+            DONE_HASH[self.JOB_ID] = True
 
     def initialize(self,path):
         user = self.conf['user'].rstrip('\n')
@@ -115,7 +84,7 @@ class Job(Thread):
         self.allIsWell = True
         self.is_slave = False
         self.is_restart = True
-        self.restart_attempts = 3
+        self.restart_attempts = int(self.conf['restart'].rstrip('\n'))
 
     
 
@@ -197,6 +166,7 @@ class Job(Thread):
         return chars
 
     def readtillexpect(self,fd,expect,log=False):
+        ''' the key method that reads till the Job is done'''
         global done,kill,KILL_DICT
         assert isinstance(expect,str)
         try:
@@ -205,7 +175,7 @@ class Job(Thread):
             self.restarted_times = 0
             has_restarted = False
             self.file_size = 0
-            max_kill_attempts = 60
+            max_kill_attempts = 20
             kill_attempts = 0
             self.max_file_size = 100**4
             while True:
@@ -221,6 +191,9 @@ class Job(Thread):
                     time.sleep(4)
                     kill_attempts += 1
                     #print 'no of attempts :',kill_attempts
+                if kill_attempts > max_kill_attempts:
+                    print 'reached the point of hard kill'
+                    self.hard_kill(fd,fi,log)
                 rd,wt,ex = select.select([fd],[],[],.1)
                 if fd in rd:
                     rep = os.read(fd,1024)
@@ -231,7 +204,7 @@ class Job(Thread):
                         fi = self.file_ops(fi)
                     reply += rep
                     self.file_size += len(rep)
-                if re.search(expect,reply) or kill_attempts > max_kill_attempts:
+                if re.search(expect,reply) :#or kill_attempts > max_kill_attempts:
                     #rep = self.backup_read(fd) # A rather more cautious read to make sure the buffer is cleared up
                     rep = unblocked_read(fd,1024,3)
                     self.writelog(fi,rep,log)
@@ -242,6 +215,27 @@ class Job(Thread):
                     break
         finally:
             self.closelog(fi)
+
+    def hard_kill(self,fd,fi,log):
+        self.write(fd,'\x1A')
+        rep = self.readtillexpect2(fd,[self.EXPECT])
+        assert not re.search(rep,self.EXPECT)
+        self.writelog(fi,rep,log)
+        self.write(fd,'kill -9 %1')
+
+    def readtillexpect2(self,fd,expect):
+        assert isinstance(expect,list)
+        reply = ''
+        while True:
+            rd,wt,ex = select.select([fd],[],[],.1)
+            if fd in rd:
+                rep = os.read(fd,1024)
+                rep.replace('\r','')
+                print rep,
+                reply += rep
+            for i in expect :
+                if re.search(i,reply):
+                    return reply
 
     def restart(self,log):
         if kill or KILL_DICT[self.path] or (self.is_slave and not JOB_HASH[self.MASTER_ID]) or not (self.is_restart and self.restart_attempts > 0 and self.restarted_times < self.restart_attempts) or not log:
@@ -461,10 +455,10 @@ def signal_handle():
                 #raise KeyboardInterrupt
             time.sleep(4)
     except KeyboardInterrupt:
-        try:
-            kill_menu()
-        except KeyboardInterrupt:
-            pass
+        #try:
+        kill_menu()
+        #except KeyboardInterrupt:
+            #pass
 
 def getconf(path,build):
     global DYN_RESTART
@@ -494,9 +488,10 @@ def fireJobs(q):
             try:
                 th.daemon=True
             except:
-                print 'bad conf file(%s)' %o
+                #print 'bad conf file(%s)' %o
                 continue
-            th.start()
+            else :
+                th.start()
         except KeyboardInterrupt: 
             sys.exit(1)
 
@@ -525,8 +520,9 @@ def handle_dynrestart():
         #dynamic_restart(DEPENDENCY_DICT[ALL_JOBS[value]]) moved up int the if block..... might not really matter much
         dead_jobs.discard(value)
         time.sleep(1) #trying to make sure the master thread resets its values  before the slave reads it
-        dynamic_restart(DEPENDENCY_DICT[ALL_JOBS[value]]) #moving it back from block..... matters very much
-        dead_jobs.discard(DEPENDENCY_DICT[ALL_JOBS[value]])
+        if ALL_JOBS[value] in DEPENDENCY_DICT.iterkeys():
+            dynamic_restart(DEPENDENCY_DICT[ALL_JOBS[value]]) #moving it back from block..... matters very much
+            dead_jobs.discard(DEPENDENCY_DICT[ALL_JOBS[value]])
     signal_handle()
 
 def dynamic_restart(valu):
@@ -575,8 +571,10 @@ def reset_vals():
 def build_check():
     global BUILD_KILL,WAIT_TILL_CLEAR
     while True:
-        build = check_for_new_build(get_current_build())
-        BUILD_KILL = True
+        build = check_for_new_build(get_current_build())  #pending : implement the build-check thread to wait till 
+        BUILD_KILL = True  #pending : implement the build-check thread to wait till all the runs are safely shutdown
+        while not WAIT_TILL_CLEAR:
+            time.sleep(2)
         
 
 if __name__ == '__main__':
@@ -596,6 +594,7 @@ if __name__ == '__main__':
                 build = get_current_build()
             else:
                 build = ''
+            print 'why am i coming here???'
             implementation(master_conf,build)
         except BuildRestart:
             if smokes_mode:
