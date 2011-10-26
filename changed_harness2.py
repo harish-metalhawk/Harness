@@ -31,6 +31,7 @@ DEPENDENCY_DICT = {} #dict of conf files , with keys as their master's job-id
 BUILD_KILL=False # this should be used by externel code for the auto stop of the all apps running,don't mess with this
 WAIT_TILL_CLEAR = False #this is used during the build detection to flag off when all the jobs are killed and ready to restart.
 BUILD_RESTART = 0 #counts the number of times the new build has been detected and jobs are relaunched
+BAD_CONF = [] #includes the array of all conf's that are labelled bad
 
 
 class BuildRestart(exceptions.Exception):
@@ -43,7 +44,7 @@ class BuildRestart(exceptions.Exception):
 class Job(Thread):
 
     def __init__(self,items):
-        global KILL_DICT,DONE_HASH
+        global KILL_DICT,DONE_HASH,BAD_CONF
         self.CONF_GOOD=True
         self.tdata=''
         #self.build = buid
@@ -63,6 +64,7 @@ class Job(Thread):
             self.initialize(path)
             Thread.__init__(self)
         else :
+            BAD_CONF.append(path)
             DONE_HASH[self.JOB_ID] = True
 
     def initialize(self,path):
@@ -505,7 +507,7 @@ def fireJobs(q):
             sys.exit(1)
 
 def handle_dynrestart():
-    global dead_jobs,DEPENDENCY_DICT,ALL_JOBS
+    global dead_jobs,DEPENDENCY_DICT,ALL_JOBS,BAD_CONF
     if len(dead_jobs) == 0:
         print 'No dead jobs currently'
         signal_handle()
@@ -517,6 +519,9 @@ def handle_dynrestart():
             if ALL_JOBS[value] in DEPENDENCY_DICT.iterkeys() and DEPENDENCY_DICT[ALL_JOBS[value]] not in pending_jobs:     #wait till the dependent children are dead before restarting and also may throw a key error for the second validation
                 print 'has a dependent'
                 while  DEPENDENCY_DICT[ALL_JOBS[value]] not in dead_jobs: #hmmm now gotta handle slave thread starting up even before master has reset its value
+                    if DEPENDENCY_DICT[ALL_JOBS[value]] in BAD_CONF:
+                        print 'the dependent job has a bad conf'
+                        break
                     print 'waiting for the child to die'
                     time.sleep(2)
                 #dynamic_restart(DEPENDENCY_DICT[ALL_JOBS[value]])
