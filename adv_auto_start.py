@@ -78,8 +78,8 @@ def check_for_new_build(old,path="/home/buildmaster/nightly/AVM/main-dev-x86/in_
         sleep(1800)
         #print(str(datetime.now()) + " : No new build yet:(")
     return new
-def get_current_build():
-    return get_latest_build()
+def get_current_build(path="/home/buildmaster/nightly/AVM/main-dev-x86/in_progress/latest"):
+    return get_latest_build(path)
 '''incase for an immediate test uncomment the next line and comment the remaining lines
 updated usage
 1) use just get_latest_build() to get the current build and check_for_new_build() for finding the next build by passing the get_latest_build() as the argyment'''

@@ -49,4 +49,10 @@ parameters from 1 to 4 are compulsary
 
 7)restart : This parameters sets the no of times the job has to be restarted in case of premature end of the job(like in case of a crash),by default 0
 
-8)port : It can set if the job uses a port like in case of app-servers and then any dependent jobs will be queued until the port is established, by default turned off( 0=> turn off, < int numbers > => port monitor is on )
+8)port : It can be set if the job uses a port like in case of app-servers and then any dependent jobs will be queued until the port is established, by default turned off( 0=> turn off, < int numbers > => port monitor is on )
+
+Menu
+---
+
+Hitting the cntrl-c takes you to the menu of the harness which enables to kill, restart, reconfigure the apps
+

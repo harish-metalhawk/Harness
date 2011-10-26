@@ -2,7 +2,7 @@
 import optparse
 
 def opts():
-    parse = optparse.OptionParser(usage='please read the usage by typing %prog -h')
+    parse = optparse.OptionParser(usage='%prog -m <Master conf path> -d <to run in smokes mode> -c <to pick the currently available latest build> -p <path to build detection> -n < to run harness in a plain mode>')
     parse.add_option('-d',dest='build',action='store_true',default=False,help="this option enables  \"smokes mode\"")
     parse.add_option('-m',dest='conf',type='string',help="This is a compulsary option which provides the path to master conf")
     parse.add_option('-c',dest='current',action='store_true',default=False,help="This is options makes the jobs run in the currently available latest builds")
