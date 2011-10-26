@@ -10,6 +10,8 @@ command line option(alternately use harness.py -h for help)
 
 4)"-n" : This option makes the harness run in plain mode that is with no build detection 
 
+5)"-c" : which runs the harness with the currently available lates build
+
 Brief description :
 
 1) "-d" : when run in this mode the SANDBOX variable is exported , which could be used by the Jobs , for example to get java -version for a new build,
@@ -17,7 +19,7 @@ Brief description :
 your command will be something like :
 ${SANDBOX}/azlinux/j2sdk1.6/x86_64/product/bin/java -version
 
-2)"-m" : all the configuration files of the jobs are declared in master conf file ,each line can have path to one conf file or if there are master and slave jobs ,they should be seperated by "->"
+2)"-m" : all the configuration files of the jobs are declared in master conf file ,each line can have path to one conf file or if there are master and slave jobs ,they should be seperated by "->" (with no spaces)
 
 Decription on conf file:
 
@@ -41,9 +43,9 @@ parameters from 1 to 4 are compulsary
 
 4)command : The simple command which is same as the one used to launch the desired job manually in a terminal.
 
-5)dur : This parameters controls the duration for which the job has to be run in mins by default its set to zero
+5)dur : This parameters controls the duration for which the job has to be run(in mins) by default its set to zero
 
-6)delay : This parameter controls the time delay before the job is started in mins, default is zero
+6)delay : This parameter controls the time delay before the job is started (in mins), default is zero
 
 7)restart : This parameters sets the no of times the job has to be restarted in case of premature end of the job(like in case of a crash),by default 0
 

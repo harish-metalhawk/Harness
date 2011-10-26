@@ -74,7 +74,7 @@ class Job(Thread):
         self.EXPECT=user+'@'+host
         self.port = int(self.conf['port'].rstrip('\n'))
         if BUILD_RESTART > 0:
-            self.log = self.conf['logs'].rstrip('\n') +'.bk.'+ str(BUILD_RESTART)
+            self.log = self.conf['logs'].rstrip('\n') +'.bd.'+ str(BUILD_RESTART)
         else :
             self.log = self.conf['logs'].rstrip('\n') 
         self.duration = float(self.conf['dur'].rstrip('\n'))
@@ -470,6 +470,9 @@ def getconf(path,build):
     global DYN_RESTART
     KILL_DICT = {}
     q = Queue()
+    if not os.path.isfile(path):
+        print 'Master conf file not found'
+        sys.exit(1)
     with open(path) as fi:
         li = fi.readlines()
         job_id = 0
@@ -589,15 +592,19 @@ if __name__ == '__main__':
     smokes_mode = opts.build
     simple_harness = opts.plain
     path_to_build = opts.path
+    curr = opts.current
     if not simple_harness:
-        build = check_for_new_build(get_current_build(path_to_build),path_to_build)
+        if curr:
+            build = get_current_build(path_to_build)
+        else :
+            build = check_for_new_build(get_current_build(path_to_build),path_to_build)
         th = threading.Thread(target=file_check)
         th.daemon = True
         th.start()
     while True:
         try:
             if not simple_harness:
-                build = get_current_build()
+                build = get_current_build(path_to_build)
             else:
                 build = ''
             implementation(master_conf,build)

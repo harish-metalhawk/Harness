@@ -13,6 +13,7 @@ def readConf(path):
     std_keys = ['user','host','path','command','logs','pass','dur','port','restart','delay']
     if not os.path.isfile(path):
         print "could not find the conf file in the given path"
+        raise BadConf
     else:
         confs = dict()
         conf_file = open(path,'r')
