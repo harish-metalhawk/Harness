@@ -603,7 +603,7 @@ if __name__ == '__main__':
             build = get_current_build(path_to_build)
         else :
             build = check_for_new_build(get_current_build(path_to_build),path_to_build)
-        th = threading.Thread(target=file_check)
+        th = threading.Thread(target=build_check)
         th.daemon = True
         th.start()
     while True:
