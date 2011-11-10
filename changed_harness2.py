@@ -226,7 +226,7 @@ class Job(Thread):
     def hard_kill(self,fd,fi,log):
         self.write(fd,'\x1A')
         rep = self.readtillexpect2(fd,[self.EXPECT])
-        assert not re.search(rep,self.EXPECT)
+        #assert not re.search(rep,self.EXPECT)
         self.writelog(fi,rep,log)
         self.write(fd,'kill -9 %1')
 
@@ -401,10 +401,15 @@ def clean_up(val):
 
 def kill_all():
     global cid,kill,DONE_HASH,KILL_DICT
+    print "cleaning up........."
     kill = True
     time.sleep(2)     #for a rare race condition where after a restart  the job thread has not yet updated the kill or KILL_DICT values but the main thread exists bcoz of the past values, probably seen if only one conf file is used
     while False in DONE_HASH:
-        time.sleep(1)
+        try:
+            time.sleep(1)
+        except KeyboardInterrupt:
+            print "please be patient"
+            pass
     kill_all_procs(cid)
 
 def handle_reconf():
@@ -608,10 +613,9 @@ if __name__ == '__main__':
         th.start()
     while True:
         try:
+            build = ''
             if not simple_harness:
                 build = get_current_build(path_to_build)
-            else:
-                build = ''
             implementation(master_conf,build)
         except BuildRestart:
             if smokes_mode:
