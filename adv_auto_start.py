@@ -60,9 +60,6 @@ def check_for_build_complete(new):
 def get_latest_build(path="/home/buildmaster/nightly/AVM/main-dev-x86/in_progress/latest"):
     proc = subprocess.Popen(["ls","-lrt",path,],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     k= str(proc.communicate()[0])
-    if proc.returncode != 0:
-        print 'The path for build detection is invalid'
-        sys.exit(1)
     #print(k)
     k = re.match(".*[-][>][\s](.*)",k)
     return k.group(1)
