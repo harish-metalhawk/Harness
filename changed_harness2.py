@@ -137,7 +137,7 @@ class Job(Thread):
         if self.time_handling:
             self.spawn_timer()
         if self.build != '' :
-            self.conf['command'] = 'SANDBOX='+self.build+'/sandbox '+self.conf['command']
+            self.conf['command'] = 'SANDBOX='+self.build+'/sandbox; '+self.conf['command']
         #cid.append(self.pid) #appending the child process id for safe clean-up
         if self.allIsWell:
             self.write(fd,'cd '+ self.conf['path'])
