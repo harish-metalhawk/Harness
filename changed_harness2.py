@@ -457,8 +457,8 @@ def signal_handle():
         while True :#threading.active_count()>1:
             #print BUILD_KILL
             if BUILD_KILL:
-                kill_all()
                 WAIT_TILL_CLEAR = True
+                kill_all()
                 BUILD_RESTART += 1
                 raise BuildRestart 
             thread_no =  threading.enumerate()[1:]
@@ -592,7 +592,9 @@ def build_check():
     while True:
         build = check_for_new_build(get_current_build())  #pending : implement the build-check thread to wait till 
         BUILD_KILL = True  #pending : implement the build-check thread to wait till all the runs are safely shutdown
-        while not WAIT_TILL_CLEAR:
+        time.sleep(4)
+        while  WAIT_TILL_CLEAR:
+            print 'waiting to clear all the apps'
             time.sleep(2)
         
 
