@@ -593,7 +593,9 @@ def build_check():
         build = check_for_new_build(get_current_build())  #pending : implement the build-check thread to wait till 
         BUILD_KILL = True  #pending : implement the build-check thread to wait till all the runs are safely shutdown
         time.sleep(4)
+        k = time.time()
         while  WAIT_TILL_CLEAR:
+            assert (time.time() - k) < 100
             print 'waiting to clear all the apps'
             time.sleep(2)
         
