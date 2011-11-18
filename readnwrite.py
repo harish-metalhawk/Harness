@@ -33,7 +33,10 @@ def bunbread(fd,size=1024,TIME_OUT=2):
 def readtillexpect(fd,expect):
     assert isinstance(expect,list)
     reply = ''
+    t = time.time()
     while True:
+        if (time.time() - t) > 300:   
+            return 'bad login' #implementing a time out if bad bashrc files , pending : raise an exception rather than if statement
         rd,wt,ex = select.select([fd],[],[],.1)
         if fd in rd:
             rep = os.read(fd,1024)

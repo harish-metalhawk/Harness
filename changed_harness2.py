@@ -137,7 +137,7 @@ class Job(Thread):
         if self.time_handling:
             self.spawn_timer()
         if self.build != '' :
-            self.conf['command'] = 'SANDBOX='+self.build+'/sandbox; '+self.conf['command']
+            self.conf['command'] = 'SANDBOX='+self.build+'/sandbox; '+re.search('(avm-x86-[0-9]+)',self.build).group(1)+'; '+self.conf['command'] #Kedar
         #cid.append(self.pid) #appending the child process id for safe clean-up
         if self.allIsWell:
             self.write(fd,'cd '+ self.conf['path'])
@@ -595,7 +595,7 @@ def build_check():
         time.sleep(4)
         k = time.time()
         while  WAIT_TILL_CLEAR:
-            assert (time.time() - k) < 100
+            assert (time.time() - k) < 500
             print 'waiting to clear all the apps'
             time.sleep(2)
         

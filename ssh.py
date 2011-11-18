@@ -31,7 +31,7 @@ class SSH(object):
         re_permdenied = 'Permission denied, please try again.'
         re_pass = self.login+'\'s password:'
         re_log = self.login
-        re_bad_bashrc = 'Last login'
+        re_bad_bashrc = 'bad login'
         re_authorized = 'to the list of known hosts.'
         success = True
         reply = readtillexpect(fd,[re_timeout,re_authen,re_hosterr,re_permdenied,re_pass,re_log,re_authorized,re_bad_bashrc])
@@ -55,11 +55,11 @@ class SSH(object):
         if re.search(re_permdenied,reply):
             print 'authentication error'
             success = False
-        if re.search(self.login,reply) and success:
-            success = True
-        elif re.search(re_bad_bashrc,reply) :
+        if re.search(re_bad_bashrc,reply) :
             success = False
             print 'bad bashrc file'
+        if re.search(self.login,reply) and success:
+            success = True
         else:
             print 'wonder wats happening!!!!!!!'
             print reply
