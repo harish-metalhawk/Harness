@@ -79,8 +79,13 @@ class Job(Thread):
             self.SEQ = False
         else :
             self.SEQ = True
+        if self.build != ''
+            BUILD_IDENTIFIER=str(re.search('(avm-x86-[0-9]+)',self.build).group(1))
         if BUILD_RESTART > 0:
-            self.log = self.conf['logs'].rstrip('\n') +'.bd.'+ str(BUILD_RESTART)
+            if self.build != ''
+                self.log = self.conf['logs'].rstrip('\n')+BUILD_IDENTIFIER
+            else:
+                self.log = self.conf['logs'].rstrip('\n') +'.bd.'+ str(BUILD_RESTART)
         else :
             self.log = self.conf['logs'].rstrip('\n') 
         self.duration = float(self.conf['dur'].rstrip('\n'))
