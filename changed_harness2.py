@@ -75,6 +75,10 @@ class Job(Thread):
         self.host = host
         self.EXPECT=user+'@'+host
         self.port = int(self.conf['port'].rstrip('\n'))
+        if self.port >= 0:
+            self.SEQ = False
+        else :
+            self.SEQ = True
         if BUILD_RESTART > 0:
             self.log = self.conf['logs'].rstrip('\n') +'.bd.'+ str(BUILD_RESTART)
         else :
@@ -98,8 +102,12 @@ class Job(Thread):
     def wait_till_master(self):
         global JOB_HASH
         self.is_slave = True
-        while not JOB_HASH[self.MASTER_ID] and not (kill or KILL_DICT[self.path]) and not DONE_HASH[self.MASTER_ID]:
-            time.sleep(3)
+        if not self.SEQ:
+            while not JOB_HASH[self.MASTER_ID] and not (kill or KILL_DICT[self.path]) and not DONE_HASH[self.MASTER_ID]:
+                time.sleep(3)
+        if self.SEQ :
+            while not DONE_HASH[self.MASTER_ID] and not (kill or KILL_DICT[self.path]) :
+                time.sleep(3)
         #print JOB_HASH[self.MASTER_ID],(kill or KILL_DICT[self.path]),DONE_HASH[self.MASTER_ID],'\t somebody woke me up',self.path
 
     def run(self):
@@ -137,7 +145,7 @@ class Job(Thread):
         if self.time_handling:
             self.spawn_timer()
         if self.build != '' :
-            self.conf['command'] = 'SANDBOX='+self.build+'/sandbox; '+re.search('(avm-x86-[0-9]+)',self.build).group(1)+'; '+self.conf['command'] #Kedar
+            self.conf['command'] = 'SANDBOX='+self.build+'/sandbox; BUILD_IDENTIFIER='+str(re.search('(avm-x86-[0-9]+)',self.build).group(1))+' ; '+self.conf['command'] #Kedar
         #cid.append(self.pid) #appending the child process id for safe clean-up
         if self.allIsWell:
             self.write(fd,'cd '+ self.conf['path'])
@@ -145,7 +153,7 @@ class Job(Thread):
             #self.backup_read(fd)
             unblocked_read(fd,1024,3)
             self.write(fd,self.conf['command'])
-            if int(self.port) != 0 :
+            if int(self.port) > 0 :
                 self.port_monitor()
             else:
                 JOB_HASH[self.JOB_ID] = True #this should have been under else statement
@@ -192,8 +200,9 @@ class Job(Thread):
                     has_restarted = False
                     self.log = self.log+'.'+str(self.restarted_times)
                     fi = self.openlog(self.log,'w',1024,log)
-                if kill or KILL_DICT[self.path] or (self.is_slave and not JOB_HASH[self.MASTER_ID]): #can be argued to be wrong implementation but logically correct as it is used in logical and only if it is a slave the second part i.e., JOB_HASH[self.master_id] is checked
+                if kill or KILL_DICT[self.path] or (self.is_slave and  (not self.SEQ) and not JOB_HASH[self.MASTER_ID]): #can be argued to be wrong implementation but logically correct as it is used in logical and only if it is a slave the second part i.e., JOB_HASH[self.master_id] is checked
                     #print 'got a kill signal'
+                    print 'I reached here   ', self.SEQ,'   ',self.path
                     self.write(fd,'\x03')
                     time.sleep(4)
                     kill_attempts += 1
