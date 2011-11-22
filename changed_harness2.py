@@ -75,15 +75,17 @@ class Job(Thread):
         self.host = host
         self.EXPECT=user+'@'+host
         self.port = int(self.conf['port'].rstrip('\n'))
+        self.BUILD_IDENTIFIER = ''
         if self.port >= 0:
             self.SEQ = False
         else :
             self.SEQ = True
         if self.build != ''
-            BUILD_IDENTIFIER=str(re.search('(avm-x86-[0-9]+)',self.build).group(1))
+            #BUILD_IDENTIFIER=str(re.search('(avm-x86-[0-9]+)',self.build).group(1))
+            self.BUILD_IDENTIFIER = str(re.search('.*/([^/]+)/+sandbox.*',self.build).group(1))
         if BUILD_RESTART > 0:
             if self.build != ''
-                self.log = self.conf['logs'].rstrip('\n')+BUILD_IDENTIFIER
+                self.log = self.conf['logs'].rstrip('\n')+ self.BUILD_IDENTIFIER
             else:
                 self.log = self.conf['logs'].rstrip('\n') +'.bd.'+ str(BUILD_RESTART)
         else :
@@ -150,7 +152,7 @@ class Job(Thread):
         if self.time_handling:
             self.spawn_timer()
         if self.build != '' :
-            self.conf['command'] = 'SANDBOX='+self.build+'/sandbox; BUILD_IDENTIFIER='+str(re.search('(avm-x86-[0-9]+)',self.build).group(1))+' ; '+self.conf['command'] #Kedar
+            self.conf['command'] = 'SANDBOX='+self.build+'/sandbox; BUILD_IDENTIFIER='+self.BUILD_IDENTIFIER+' ; '+self.conf['command'] #Kedar
         #cid.append(self.pid) #appending the child process id for safe clean-up
         if self.allIsWell:
             self.write(fd,'cd '+ self.conf['path'])
@@ -358,15 +360,13 @@ class Job(Thread):
         rotate_fi.writelines(full[-300:])
         rotate_fi.close()
 
-        
-
-
     def check_process_alive(self):
         try:
             os.kill(self.pid,0)
             self.process_alive = True
         except:
             self.process_alive = False 
+
 
 def kill_menu():
     global KILL_DICT
